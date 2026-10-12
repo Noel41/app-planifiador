@@ -33,9 +33,9 @@ product_name = "PLANIFICADOR YAAN"
 company = "yaan"
 copyright = "Copyright (C) 2023-2026 by YAAN"
 
-# Limitación de arquitectura para Android APK
+# Limitación de arquitectura para Android APK (Soporta 64 y 32 bits, excluye x86_64)
 [tool.flet.apk]
-arch = ["arm64-v8a, "armeabi-v7a"]
+arch = ["arm64-v8a", "armeabi-v7a"]
 
 [tool.flet.app]
 path = "src"
