@@ -3,6 +3,14 @@ import json
 import os
 from datetime import datetime
 
+# Función para obtener un directorio donde Android SÍ permite escribir datos
+def obtener_directorio_datos():
+    ruta_usuario = os.path.expanduser("~")
+    dir_datos = os.path.join(ruta_usuario, ".app_planificador")
+    if not os.path.exists(dir_datos):
+        os.makedirs(dir_datos, exist_ok=True)
+    return dir_datos
+
 def parse_fecha(fecha_str):
     for fmt in ("%d/%m/%Y", "%d/%m/%y", "%Y-%m-%d"):
         try:
@@ -53,31 +61,31 @@ class TabActividades(ft.Column):
         self.actualizar_lista()
 
     def obtener_ruta_json(self):
-        ruta_script = os.path.dirname(os.path.abspath(__file__))
-        return os.path.join(ruta_script, self.archivo_json)
+        dir_datos = obtener_directorio_datos()
+        return os.path.join(dir_datos, self.archivo_json)
 
     def cargar_actividades(self):
         try:
             ruta = self.obtener_ruta_json()
             with open(ruta, "r", encoding="utf-8") as f:
                 return json.load(f)
-        except (FileNotFoundError, json.JSONDecodeError):
+        except (FileNotFoundError, json.JSONDecodeError, Exception):
             return []
 
-    def guardar_actividades(self):
+    async def guardar_actividades(self):
         try:
             ruta = self.obtener_ruta_json()
             with open(ruta, "w", encoding="utf-8") as f:
                 json.dump(self.actividades, f, indent=2, ensure_ascii=False)
         except Exception as e:
-            self.page.open(ft.SnackBar(ft.Text(f"Error al guardar: {e}")))
+            await self.page.open_async(ft.SnackBar(ft.Text(f"Error al guardar: {e}")))
 
-    def agregar_actividad(self, e):
+    async def agregar_actividad(self, e):
         texto = self.txt_nueva.value.strip()
         fecha_str = self.txt_fecha.value.strip()
         
         if not texto:
-            self.page.open(ft.SnackBar(ft.Text("Escribe una descripción para la actividad.")))
+            await self.page.open_async(ft.SnackBar(ft.Text("Escribe una descripción para la actividad.")))
             return
             
         try:
@@ -93,43 +101,50 @@ class TabActividades(ft.Column):
             })
             
             self.txt_nueva.value = ""
-            self.guardar_actividades()
+            await self.guardar_actividades()
             self.actualizar_lista()
-            self.page.open(ft.SnackBar(ft.Text("Actividad añadida correctamente.")))
+            await self.page.update_async()
+            await self.page.open_async(ft.SnackBar(ft.Text("Actividad añadida correctamente.")))
         except ValueError:
-            self.page.open(ft.SnackBar(ft.Text("Formato de fecha inválido (Use DD/MM/YYYY)")))
+            await self.page.open_async(ft.SnackBar(ft.Text("Formato de fecha inválido (Use DD/MM/YYYY)")))
 
-    def cambiar_estado(self, index, val):
+    async def cambiar_estado(self, index, val):
         self.actividades[index]["completada"] = val
-        self.guardar_actividades()
+        await self.guardar_actividades()
         self.actualizar_lista()
+        await self.page.update_async()
 
-    def eliminar_actividad(self, index):
+    async def eliminar_actividad(self, index):
         del self.actividades[index]
-        self.guardar_actividades()
+        await self.guardar_actividades()
         self.actualizar_lista()
+        await self.page.update_async()
 
-    def editar_actividad(self, index):
+    async def editar_actividad(self, index):
         act = self.actividades[index]
         input_edit = ft.TextField(value=act["texto"], expand=True)
 
-        def guardar_edit(e):
+        async def guardar_edit(e):
             if input_edit.value.strip():
                 act["texto"] = input_edit.value.strip()
-                self.guardar_actividades()
+                await self.guardar_actividades()
                 self.actualizar_lista()
                 dlg.open = False
-                self.page.update()
+                await self.page.update_async()
+
+        async def cancelar_edit(e):
+            dlg.open = False
+            await self.page.update_async()
 
         dlg = ft.AlertDialog(
             title=ft.Text("Editar Descripción"),
             content=input_edit,
             actions=[
-                ft.TextButton("Cancelar", on_click=lambda e: setattr(dlg, "open", False) or self.page.update()),
+                ft.TextButton("Cancelar", on_click=cancelar_edit),
                 ft.ElevatedButton("Guardar", on_click=guardar_edit)
             ]
         )
-        self.page.open(dlg)
+        await self.page.open_async(dlg)
 
     def actualizar_lista(self):
         self.lv_actividades.controls.clear()
@@ -179,34 +194,14 @@ class TabActividades(ft.Column):
                 ], wrap=False, width=80)
             )
             self.lv_actividades.controls.append(tile)
-        
-        self.page.update()
-
-    def verificar_recordatorios(self):
-        hoy = datetime.now().date()
-        alertas = []
-        
-        for act in self.actividades:
-            if not act.get("completada") and act.get("fecha"):
-                try:
-                    fecha = parse_fecha(act["fecha"])
-                    dias = (fecha - hoy).days
-                    if 0 <= dias <= 7:
-                        alertas.append(f"• {act['texto']} ({dias}d restantes)")
-                except Exception:
-                    pass
-        
-        if alertas:
-            msg = f"Pendientes próximos en {self.nombre_proyecto}:\n" + "\n".join(alertas)
-            self.page.open(ft.SnackBar(ft.Text(msg), duration=5000))
 
 
-def main(page: ft.Page):
+async def main(page: ft.Page):
     page.title = "Planificador Multi-Proyecto"
     page.theme_mode = ft.ThemeMode.LIGHT
     page.padding = 0
 
-    ruta_config = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config_proyectos.json")
+    ruta_config = os.path.join(obtener_directorio_datos(), "config_proyectos.json")
 
     def cargar_proyectos():
         try:
@@ -215,14 +210,17 @@ def main(page: ft.Page):
         except Exception:
             return ["Trabajo de Grado", "Ingeniería Electrónica", "General"]
 
-    def guardar_proyectos(projs):
-        with open(ruta_config, "w", encoding="utf-8") as f:
-            json.dump(projs, f, indent=2, ensure_ascii=False)
+    async def guardar_proyectos(projs):
+        try:
+            with open(ruta_config, "w", encoding="utf-8") as f:
+                json.dump(projs, f, indent=2, ensure_ascii=False)
+        except Exception as e:
+            await page.open_async(ft.SnackBar(ft.Text(f"Error al guardar proyectos: {e}")))
 
     proyectos = cargar_proyectos()
     tabs_control = ft.Tabs(selected_index=0, expand=True)
 
-    def construir_tabs():
+    async def construir_tabs():
         tabs_control.tabs.clear()
         for p in proyectos:
             tabs_control.tabs.append(
@@ -232,42 +230,46 @@ def main(page: ft.Page):
                     content=TabActividades(page, p)
                 )
             )
-        page.update()
+        await page.update_async()
 
-    def crear_proyecto(e):
+    async def crear_proyecto(e):
         txt_nombre = ft.TextField(hint_text="Nombre del trabajo...")
 
-        def confirmar(e_conf):
+        async def confirmar(e_conf):
             val = txt_nombre.value.strip()
             if val and val not in proyectos:
                 proyectos.append(val)
-                guardar_proyectos(proyectos)
-                construir_tabs()
+                await guardar_proyectos(proyectos)
+                await construir_tabs()
                 dlg.open = False
-                page.update()
+                await page.update_async()
+
+        async def cancelar(e_canc):
+            dlg.open = False
+            await page.update_async()
 
         dlg = ft.AlertDialog(
             title=ft.Text("Nuevo Trabajo"),
             content=txt_nombre,
             actions=[
-                ft.TextButton("Cancelar", on_click=lambda e: setattr(dlg, "open", False) or page.update()),
+                ft.TextButton("Cancelar", on_click=cancelar),
                 ft.ElevatedButton("Crear", on_click=confirmar)
             ]
         )
-        page.open(dlg)
+        await page.open_async(dlg)
 
-    def eliminar_proyecto_actual(e):
+    async def eliminar_proyecto_actual(e):
         if len(proyectos) <= 1:
-            page.open(ft.SnackBar(ft.Text("Debes mantener al menos un trabajo.")))
+            await page.open_async(ft.SnackBar(ft.Text("Debes mantener al menos un trabajo.")))
             return
 
         idx = tabs_control.selected_index
         nombre = proyectos[idx]
 
         proyectos.pop(idx)
-        guardar_proyectos(proyectos)
-        construir_tabs()
-        page.open(ft.SnackBar(ft.Text(f"Se eliminó '{nombre}'")))
+        await guardar_proyectos(proyectos)
+        await construir_tabs()
+        await page.open_async(ft.SnackBar(ft.Text(f"Se eliminó '{nombre}'")))
 
     # Barra superior
     app_bar = ft.AppBar(
@@ -282,7 +284,7 @@ def main(page: ft.Page):
 
     page.appbar = app_bar
     page.add(tabs_control)
-    construir_tabs()
+    await construir_tabs()
 
 if __name__ == "__main__":
     ft.run_async(main)
