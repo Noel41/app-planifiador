@@ -285,4 +285,4 @@ def main(page: ft.Page):
     construir_tabs()
 
 if __name__ == "__main__":
-    ft.app(target=main)
+    ft.run_async(main)
