@@ -1,7 +1,7 @@
 [project]
-name = "app-planificador"
-version = "0.1.0"
-description = ""
+name = "PLANIFICADOR YAAN"
+version = "2.0.0"
+description = "Planificar de Actividades"
 readme = "README.md"
 requires-python = ">=3.10"
 authors = [
@@ -27,10 +27,10 @@ testpaths = ["tests"]
 pythonpath = ["src"]
 
 [tool.flet]
-org = "com.mycompany"
-product = "app-planificador"
-company = "Flet"
-copyright = "Copyright (C) 2023-2026 by Flet"
+org = "NOEL FRANCO"
+product = "PLANIFICADOR YAAN"
+company = "YAAN"
+copyright = "Copyright (C) 2023-2026 by YAAN"
 
 # src/assets/icon.png is the icon for every platform. Keep it transparent and
 # filling the whole canvas: web, Windows and Linux show it as-is, and Flet
