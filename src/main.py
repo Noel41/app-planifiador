@@ -4,7 +4,6 @@ import os
 from datetime import datetime
 
 def obtener_directorio_datos(page: ft.Page):
-    # Utilizar el directorio persistente asignado a la app por el sistema
     dir_datos = os.path.join(page.get_upload_dir() if hasattr(page, "get_upload_dir") else os.path.expanduser("~"), ".app_planificador")
     if not os.path.exists(dir_datos):
         os.makedirs(dir_datos, exist_ok=True)
@@ -278,6 +277,5 @@ def main(page: ft.Page):
     page.add(tabs_control)
     construir_tabs()
 
-# Punto de entrada estándar para Flet
 if __name__ == "__main__":
     ft.app(target=main)
