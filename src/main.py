@@ -4,7 +4,10 @@ import os
 from datetime import datetime
 
 def obtener_directorio_datos(page: ft.Page):
-    dir_datos = os.path.join(page.get_upload_dir() if hasattr(page, "get_upload_dir") else os.path.expanduser("~"), ".app_planificador")
+    try:
+        dir_datos = os.path.join(page.get_upload_dir() if hasattr(page, "get_upload_dir") and page.get_upload_dir() else os.path.expanduser("~"), ".app_planificador")
+    except Exception:
+        dir_datos = os.path.join(os.path.expanduser("~"), ".app_planificador")
     if not os.path.exists(dir_datos):
         os.makedirs(dir_datos, exist_ok=True)
     return dir_datos
@@ -278,4 +281,5 @@ def main(page: ft.Page):
     construir_tabs()
 
 if __name__ == "__main__":
-    ft.app(target=main)
+    # Compatibilidad oficial con Flet 1.0+ en Android
+    ft.run_async(main)
