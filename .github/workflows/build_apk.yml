@@ -1,0 +1,44 @@
+name: Compilar APK Android (Flet)
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar código fuente
+        uses: actions/checkout@v4
+
+      - name: Configurar Java JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Configurar Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: Instalar Flet y dependencias
+        run: |
+          python -m pip install --upgrade pip
+          pip install flet flet-cli
+
+      - name: Compilar APK
+        run: |
+          flet build apk -v
+
+      - name: Subir APK generado
+        uses: actions/upload-artifact@v4
+        with:
+          name: Planificador-Android-APK
+          path: build/apk/*.apk
