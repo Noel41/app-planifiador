@@ -13,7 +13,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Configurar Java JDK 17
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
@@ -28,10 +28,14 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: Instalar Flet y herramientas
+      - name: Aceptar Licencias de Android SDK
+        run: |
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
+
+      - name: Instalar Flet y CLI
         run: |
           python -m pip install --upgrade pip
-          pip install flet flet-cli flet-build
+          pip install flet flet-cli
 
       - name: Compilar APK
         run: |
