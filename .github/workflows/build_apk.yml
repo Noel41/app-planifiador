@@ -12,8 +12,8 @@ jobs:
       - name: Descargar código fuente
         uses: actions/checkout@v4
 
-      - name: Configurar Java JDK
-        uses: actions/setup-java@v4
+      - name: Configurar Java JDK 17
+        uses: actions/setup-java@v5
         with:
           distribution: 'zulu'
           java-version: '17'
@@ -21,17 +21,17 @@ jobs:
       - name: Configurar Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.12'
 
       - name: Configurar Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
 
-      - name: Instalar Flet y dependencias
+      - name: Instalar Flet y herramientas
         run: |
           python -m pip install --upgrade pip
-          pip install flet flet-cli
+          pip install flet flet-cli flet-build
 
       - name: Compilar APK
         run: |
