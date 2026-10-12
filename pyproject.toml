@@ -1,7 +1,7 @@
 [project]
 name = "planificador_yaan"
 version = "0.1.0"
-description = "PLANIFICADOR-YAAN"
+description = "PLANIFICADOR YAAN"
 readme = "README.md"
 requires-python = ">=3.10"
 authors = [
@@ -29,16 +29,13 @@ pythonpath = ["src"]
 [tool.flet]
 org = "com.noelfranco"
 name = "planificador_yaan"
-product_name = "PLANIFICADOR-YAAN"
+product_name = "PLANIFICADOR YAAN"
 company = "yaan"
 copyright = "Copyright (C) 2023-2026 by YAAN"
 
-# src/assets/icon.png is the icon for every platform. Keep it transparent and
-# filling the whole canvas: web, Windows and Linux show it as-is, and Flet
-# shrinks it to the margin iOS, macOS and Android each mask away. This colour
-# is what sits behind it where transparency cannot survive - the iOS icon, the
-# macOS tile and the Android background layer. Defaults to white.
-# icon_background = "#ffffff"
+# Limitación de arquitectura para Android APK
+[tool.flet.apk]
+arch = ["arm64-v8a, "armeabi-v7a"]
 
 [tool.flet.app]
 path = "src"
